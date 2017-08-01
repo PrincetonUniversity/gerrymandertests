@@ -1,29 +1,56 @@
-import gerrytests as gt
+#import gerrytests as gt
 import json, os
 from pprint import pprint
 
-def parse_results(filename):
-	""" Read the individual election results file and store the result in memory.
+# Map from state number to state abbreviation
+STATES = [
+	'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+	'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+	'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+	'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+	'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'
+]
 
-	This function is called at application start.
+def parse_results(input_filename, output_filename=None, silent=False):
+	""" Read a csv file describing district-level election results.
+
+	The following format is expected:
+		year, statenumber, districtnumber, result, ?, ?
+
+	Districts are assumed to be listed in numerical order
+
+	Parameters
+	----------
+	input_filename : str
+		Name of results file to read
+	output_filename : str, optional
+		Name of file in which to save results.  If not provided, return
+		value will not be saved to file.
+	silent : bool, optional
+		Whether to suppress parse errors while reading.  Default is false.
+
+	Returns
+	----------
+	results : dict
+		A structured version of the input file, indexed by year and then state
+		postal abbreviation.  For example the line 2012,1,1,0.7 will be added as
+		results['2012']['AL'][0] = 0.7
+
 	"""
-	STATES = [
-		'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
-		'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
-		'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-		'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
-		'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'
-	]
 
 	# Initialize results dict
-	results = {str(y) : {} for y in range(1948, 2018, 2)};
+	results = {};
 	with open(filename) as file:
-		for line in file:
+		for i,line in enumerate(file):
 			try:
+				#
 				(year, state, _, res, _, _) = line.split(',')
 			except:
-				print(line)
-				continue
+				print('Error reading line %d: %s' % (i, line))
+				if silent:
+					print('\tignoring')
+					continue
+				else: raise
 
 			# State Postal code from alphabetical index
 			state = STATES[int(state) - 1]
@@ -40,14 +67,17 @@ def parse_results(filename):
 def run_all_tests(all_results, years=None):
 	""" Run all of the tests on each of the elections present in results.
 
-	Results should be a dict indexed by year.  Each value is another dict
-	giving district-level results for that year.
+	Parameters
+	----------
+	all_results : dict
+		A dictionary indexed by string years of district-level results per state.
+		This is the same format output by parse_results.
+
+	years : list, optional
+
 	"""
 
 	impute_val = 0.75
-
-	with open('static/data/precomputed_tests.json', 'r') as file:
-		tests = json.load(file)
 
 	if years is None:
 		years = all_results.keys()
@@ -94,38 +124,4 @@ def run_all_tests(all_results, years=None):
 
 	return tests
 
-def load_content():
-	""" From the content folder, load each json file into a single dictionary indexed by page.
-	"""
-	print('Initializing content...\n')
-	content = {}
-	for f in os.listdir('content'):
-		name = f[:-5]	# up until ".json"
-		print('Loading %s...' % name)
-		with open(os.path.join('content', f), encoding='utf-8') as file:
-			content[name] = json.load(file)
-			#print(content[name], '\n')
 
-	return content
-
-def geojson_convert(fname):
-	""" Some weird stuff with the Highcharts-provided geojson files.  Let's see if we can fix it.
-	"""
-	with open(fname) as file:
-		geo = json.load(file)
-
-	newgeo = {'features': [], 'type': 'FeatureCollection'}
-
-	for obj in geo['geometries']:
-		newgeo['features'].append({
-			'type': 'feature',
-			'geometry': obj,
-			'properties': {}
-		})
-
-	pprint(newgeo)
-
-if __name__=="__main__":
-	# results = parse_results('static/data/results1948.csv')
-	# run_all_tests(results, [str(y) for y in range(1948, 2012, 2)])
-	geojson_convert('static/data/districts/us-pa-congress-113.geo.json')
