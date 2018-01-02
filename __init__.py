@@ -1,1 +1,1 @@
-all = ['tests', 'util']
+all = ['gerrytests', 'util']
