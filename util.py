@@ -83,6 +83,7 @@ def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[])
     if years is None:
         years = all_results.keys()
     else:
+        #convert years to string so they match results dictionary keys
         years = [str(year) for year in years]
 
     for year in years:
@@ -124,3 +125,10 @@ def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[])
             }
 
     return tests
+
+if __name__ == '__main__':
+    #run the tests on the 2012, 2014, and 2016 presidential elections
+    results_file = 'results1948.csv'
+    years_to_test = [2012, 2014, 2016]
+    results = parse_results(results_file)
+    tests = run_all_tests(results, years=years_to_test)
