@@ -24,10 +24,11 @@ def test_fantasy_delegations(state_results, all_results=None,
         symmetric=False, epsilon=0.001, n_sims=100000):
     """ Evaluate an election by comparing it to many simulations.
 
-    Simulate state elections by choosing individual district results from
-    the all_results set for same number of districts as are in the state.
-    Compute both the vote share and seats won, and return the set of simulated
-    results whos voteshares compare
+    Simulate state elections by choosing N election results from the all_results
+    set of elections, where N is the number of districts in the state of interest
+    Repeat simulation n_sims times, retrun elections where the mean simulated vote share
+    is within epsilon of the true vote share for the state of interest.
+    Compute the distribution of seats won in the simulation.
     """
 
     if all_results is None:
@@ -44,20 +45,17 @@ def test_fantasy_delegations(state_results, all_results=None,
     actual_voteshare = np.mean(state_results)
     actual_seats = np.sum(state_results > .5)
 
-    # Keep track of voteshare % and seats won for each simulated election
-    voteshare = np.empty([n_sims])
-    seats = np.empty([n_sims])
-
     # Pull random sets of districts and record voteshare and seats for each
-    for i in range(n_sims):
-        delegation = np.random.choice(all_results, n_districts)
+    delegation = np.random.choice(all_results, (n_districts, n_sims))
 
+    if symmetric:
         # Randomly invert some of the vote shares
-        if symmetric:
-            delegation = np.asarray([(1 - x if np.random.rand() > 0.5 else x) for x in delegation])
+        invert = np.random.random((18,2))>.5
+        delegation[invert] = 1 - delegation[invert]
 
-        voteshare[i] = np.sum(delegation) / n_districts
-        seats[i] = np.sum(delegation > 0.5)
+    # voteshare % and seats won for each simulated election
+    voteshare = np.sum(delegation, axis=0) / n_districts
+    seats = np.sum(delegation > 0.5, axis=0)
 
     # Find simulations within epsilon of state results
     match_seats = seats[np.abs(voteshare - actual_voteshare) < epsilon]
@@ -72,7 +70,7 @@ def test_fantasy_delegations(state_results, all_results=None,
         np.sum(match_seats <= actual_seats)) / float(n_matches)
 
     # Count of each outcome
-    sim_seats = [int(sum(match_seats == i)) for i in range(n_districts)]
+    seat_hist = {i: int(sum(match_seats == i)) for i in range(n_districts+1)}
 
     # Invalidate result if we don't have enough matching simulations
     if n_matches < MIN_MATCHES: p = -1
@@ -81,7 +79,7 @@ def test_fantasy_delegations(state_results, all_results=None,
         "mean_seats"    : mean_seats,
         "std_seats"     : std_seats,
         "n_matches"     : n_matches,
-        "sim_seats"     : sim_seats,
+        "seat_hist"     : seat_hist,
         "p"             : p,
         "favor"        : sign(sum(state_results > 0.5) - mean_seats) if p < 0.05 else 0
     }
