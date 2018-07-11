@@ -63,7 +63,7 @@ def parse_results(input_filename, silent=False):
 
     return results
 
-def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[]):
+def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[], test1=True, test2=True, test3=True):
     """ Run all of the tests on each of the elections present in results.
 
     Parameters
@@ -110,19 +110,26 @@ def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[])
                 if x == 0: imputed[idx] = 1 - impute_val
 
             print('\t- %s' % state)
+            
             # run each test and save outcome
             tests[year][state] = {
-                "test1"     : gt.test_lopsided_wins(imputed),
-                "test2"     : gt.test_consistent_advantage(imputed),
-                "test3"     : gt.test_fantasy_delegations(imputed, national_results, n_sims=100000),
                 "voteshare" : sum(state_results) / len(state_results),
-                "seats"     : len([0 for r in state_results if r > 0.5]),
+                "dseats"     : len([0 for r in state_results if r > 0.5]),
+                "seats"     : len([0 for r in state_results if r > 0.5]), # redundant with dseats, but we might need this for backwards compatibility with the site
                 "results"   : state_results,
                 "ndists"    : len(state_results),
                 "nall"      : len(all_results),
                 "state"     : state,
                 "year"      : year
             }
+            
+            if test1:
+                tests[year][state]['test1'] = gt.test_lopsided_wins(imputed)
+            if test2:
+                tests[year][state]['test2'] = gt.test_consistent_advantage(imputed)
+            if test3:
+                tests[year][state]['test3'] = gt.test_fantasy_delegations(imputed, national_results, n_sims=100000)
+
 
     return tests
 
