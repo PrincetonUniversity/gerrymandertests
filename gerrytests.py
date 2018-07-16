@@ -18,8 +18,6 @@ from scipy.stats import ttest_ind as ttest, norm as normal
 
 sign = lambda x: (1, -1)[x < 0]
 
-MIN_MATCHES = 100
-
 def test_fantasy_delegations(state_results, all_results=None,
         symmetric=False, epsilon=0.001, n_sims=100000):
     """ Evaluate an election by comparing it to many simulations.
@@ -65,15 +63,12 @@ def test_fantasy_delegations(state_results, all_results=None,
     mean_seats = np.mean(match_seats)
     std_seats = np.std(match_seats)
 
-    # Percent of simulations with more extreme results
+    # Percent of simulations with results as extreme or worse
     p = min(np.sum(match_seats >= actual_seats),
-        np.sum(match_seats <= actual_seats)) / float(n_matches)
+            np.sum(match_seats <= actual_seats)) / float(n_matches)
 
     # Count of each outcome
     seat_hist = {i: int(sum(match_seats == i)) for i in range(n_districts+1)}
-
-    # Invalidate result if we don't have enough matching simulations
-    if n_matches < MIN_MATCHES: p = -1
 
     result = {
         "mean_seats"    : mean_seats,
@@ -81,7 +76,7 @@ def test_fantasy_delegations(state_results, all_results=None,
         "n_matches"     : n_matches,
         "seat_hist"     : seat_hist,
         "p"             : p,
-        "favor"        : sign(sum(state_results > 0.5) - mean_seats) if p < 0.05 else 0
+        "favor"         : sign(sum(state_results > 0.5) - mean_seats) if p < 0.05 else 0
     }
 
     return clean_nan(result)
