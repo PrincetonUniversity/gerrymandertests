@@ -97,11 +97,18 @@ def test_lopsided_wins(state_results):
     # Separate results by winning party, keep winning party vote share
     dem_wins = state_results[state_results > .5]
     rep_wins = 1 - state_results[state_results < .5]
+    winning_party = np.sign(len(rep_wins) - len(dem_wins)) # 1 for D, -1 for R, 0 otherwise
 
-    # Run t-test
-    _, p = ttest(dem_wins, rep_wins, equal_var=True)
+    # Run two-tailed t-test
+    t, p = ttest(dem_wins, rep_wins, equal_var=True)
     dmean = np.mean(dem_wins)
     rmean = np.mean(rep_wins)
+    
+    # convert to one-tailed p-value, testing hypothesis that the party with fewer seats has the larger mean win margin.
+    if winning_party==np.sign(t):
+        p = p/2
+    else:
+        p = 1 - p/2
 
     result =  {
         "p"     : p,
@@ -135,7 +142,7 @@ def test_consistent_advantage(state_results):
         "diff"  : diff,
         "p"     : p,
         "z"     : z,
-        "favor" : -1*sign(diff) if p < 0.05 else 0
+        "favor" : -sign(diff) if p < 0.05 else 0
     }
 
     return clean_nan(result)
