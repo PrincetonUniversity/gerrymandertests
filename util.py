@@ -124,7 +124,7 @@ def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[],
             }
             
             if test1:
-                tests[year][state]['test1'] = gt.test_lopsided_wins(imputed)
+                tests[year][state]['test1'] = gt.test_lopsided_wins(imputed, onetailed=False)
             if test2:
                 tests[year][state]['test2'] = gt.test_consistent_advantage(imputed)
             if test3:
@@ -136,6 +136,6 @@ def run_all_tests(all_results, years=None, impute_val=1.0, states_to_exclude=[],
 if __name__ == '__main__':
     #run the tests on the 2012, 2014, and 2016 presidential elections
     results_file = 'results1948.csv'
-    years_to_test = [2012, 2014, 2016]
     results = parse_results(results_file)
+    years_to_test = list(results.keys())
     tests = run_all_tests(results, years=years_to_test)

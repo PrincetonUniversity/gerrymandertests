@@ -81,7 +81,7 @@ def test_fantasy_delegations(state_results, all_results=None,
 
     return clean_nan(result)
 
-def test_lopsided_wins(state_results):
+def test_lopsided_wins(state_results, onetailed=True):
     """ Evaluate an election by comparing average party voteshare.
 
     Perform a two-sample t-test on the individual district results, comparing
@@ -99,11 +99,12 @@ def test_lopsided_wins(state_results):
     dmean = np.mean(dem_wins)
     rmean = np.mean(rep_wins)
     
+    if onetailed:
     # convert to one-tailed p-value, testing hypothesis that the party with fewer seats has the larger mean win margin.
-    if winning_party==np.sign(t):
-        p = p/2
-    else:
-        p = 1 - p/2
+        if winning_party==np.sign(t):
+            p = p/2
+        else:
+            p = 1 - p/2
 
     result =  {
         "p"     : p,
