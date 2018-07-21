@@ -12,8 +12,10 @@ as the democratic percent of the two-party vote share between the Democratic
 and Republican parties, though this could be inverted.
 """
 
+from __future__ import division # for python 2
 import numpy as np
 import scipy.stats as stats
+
 
 class NoElectionsError(Exception):
     pass
@@ -142,7 +144,7 @@ def get_t_test(voteshares, onetailed=False):
 @catchNoElections
 def get_mean_median(voteshares):
     s = _stats(voteshares)
-    return np.mean(s['voteshares'])-np.median(['voteshares'])
+    return np.mean(s['voteshares'])-np.median(s['voteshares'])    
 
 def get_mean_median_test(voteshares):
     """ Evaluate an election by calculating skewness of district results.
@@ -190,7 +192,9 @@ def get_equal_vote_weight(voteshares):
 #########################################################################
 # EG variants
 #########################################################################
-
+# voteshares = np.array([0.58506428, 0.46357147, 0.45602251, 0.13485671, 0.44873664, 0.72320415, 0.53984839, 0.68092984, 0.39527916, 0.33053076])
+# tau=0
+# get_tau_gap(voteshares, tau=0)
 @catchNoElections
 def get_tau_gap(voteshares,tau):
     """ compute tau-gap. 
@@ -201,10 +205,11 @@ def get_tau_gap(voteshares,tau):
     s = _stats(voteshares)
         
     tau_sgn = np.sign(tau)
+    if tau_sgn==0: tau_sgn = 1 # (?)
         
     ai = 2*s['voteshares'] - 1
     ai_sgn = np.sign(ai)
-    
+
     m = np.sum(ai_sgn==1)
 
     if tau_sgn==1: # votes close to 50% are weighed more ("traditional")
@@ -212,7 +217,7 @@ def get_tau_gap(voteshares,tau):
     else:             # votes close to 50% are weighed less 
         tmp = ai_sgn*(1 - ai_sgn*ai)**(1-tau)
     ans = np.sum(tmp)
-        
+
     return tau_sgn*2*(ans/s['N'] + 0.5 - m/s['N'])
 
     
@@ -223,19 +228,19 @@ def get_EG(voteshares):
 
 
 @catchNoElections
-def _EG_lam(voteshares, lam=1, surplus_only=False, vote_centric=True):
+def _EG_lam(voteshares, lam=1, surplus_only=False, vote_centric=False):
     """ weight excess votes by lambda - lambda=1 is usual EG
     """
     s = _stats(voteshares)
         
     dem_loss = np.sum(s['r_voteshares'])
-    rep_loss = np.sum(1-s['r_voteshares'])
+    rep_loss = np.sum(1-s['d_voteshares'])
     
     dem_surp = np.sum(lam*(s['d_voteshares'] - 0.5))
     rep_surp = np.sum(lam*(1 - s['r_voteshares'] - 0.5))
     
     if surplus_only:
-        return (dem_surp - rep_surp)/N
+        return (dem_surp - rep_surp)/s['N']
     else:
         if vote_centric:
             return (dem_surp + dem_loss)/np.sum(s['voteshares']) - (rep_surp + rep_loss)/np.sum(1-s['voteshares'])
@@ -254,7 +259,7 @@ def get_EG_original(voteshares):
         this is usual EG - should return same answer as get_EG
         corresponds to 2-proportionality
     """
-    return _EG_lam(voteshares)
+    return _EG_lam(voteshares, lam=1)
 
 def get_EG_difference(voteshares):
     """ weight excess votes by lambda=2
@@ -307,26 +312,26 @@ def get_declination(voteshares, bdec=False):
     
     if bdec:
         # This is obviously somewhat arbitrary for large elections
-        xtra_num = 1 + int(math.ceil(N / 20))
+        xtra_num = 1 + int(np.ceil(s['N'] / 20))
         
         # add in two points so each slope is decreased slightly.
-        s['d_voteshares'] = np.append(s['d_voteshares'], .5*np.ones(xtra_num))
-        s['r_voteshares'] = np.append(s['r_voteshares'], .5001*np.ones(xtra_num))
+        s['r_voteshares'] = np.append(s['r_voteshares'], .5*np.ones(xtra_num))
+        s['d_voteshares'] = np.append(s['d_voteshares'], .5001*np.ones(xtra_num))
     else:
         xtra_num = 0
         
     N_d_wins = len(s['d_voteshares'])
     N_r_wins = len(s['r_voteshares'])
 
-    theta = np.arctan((1-2*np.mean(s['r_voteshares']))*(N+2*xtra_num) / N_r_wins)
-    gamma = np.arctan((2*np.mean(s['d_voteshares'])-1)*(N+2*xtra_num) / N_d_wins)
+    theta = np.arctan((1-2*np.mean(s['r_voteshares']))*(s['N']+2*xtra_num) / N_r_wins)
+    gamma = np.arctan((2*np.mean(s['d_voteshares'])-1)*(s['N']+2*xtra_num) / N_d_wins)
 
     return 2*(gamma-theta) / np.pi
 
 def get_declin_tilde(voteshares, bdec=False):
     """ compatibility routine for getting declination; for pandas
     """    
-    return get_declin(voteshares, bdec=bdec)*math.log(len(voteshares)) / 2
+    return get_declination(voteshares, bdec=bdec)*np.log(len(voteshares)) / 2
 
 def get_bdec_tilde(voteshares):
     return get_declin_tilde(voteshares, bdec=True)
