@@ -1,0 +1,3 @@
+[submodule "election_data/state_legislative"]
+	path = election_data/state_legislative
+	url = https://github.com/PrincetonUniversity/historic_state_legislative_election_results.git
