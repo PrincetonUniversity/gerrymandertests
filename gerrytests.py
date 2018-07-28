@@ -17,17 +17,6 @@ import numpy as np
 import scipy.stats as stats
 
 
-class NoElectionsError(Exception):
-    pass
-
-def catchNoElections(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except NoElectionsError:
-            return np.nan
-    return wrapper
-
 def _clean_nan(x, replace=-1):
     """ Replace NaN values with a given alternative, default -1.
     """
@@ -39,16 +28,22 @@ def _clean_nan(x, replace=-1):
     #     except: continue
     # return result
 
-def _stats(voteshares):
+def _stats(voteshares, min_per_party_n_wins=0):
     if len(voteshares)==0:
-        raise NoElectionsError
+        return np.nan
         
     if isinstance(voteshares, list):
         voteshares = np.array(voteshares)
+        
+    d_voteshares = voteshares[voteshares > 0.5]
+    r_voteshares = voteshares[voteshares <= 0.5]
+    
+    if (len(d_voteshares)<min_per_party_n_wins) or (len(r_voteshares)<min_per_party_n_wins):
+        return np.nan
 
     return {'voteshares': voteshares,
-            'd_voteshares': voteshares[voteshares > 0.5],
-            'r_voteshares': voteshares[voteshares <= 0.5],
+            'd_voteshares': d_voteshares,
+            'r_voteshares': r_voteshares,
             'N': len(voteshares)}
 
 
@@ -63,8 +58,11 @@ def get_bootstrap(voteshares, all_results,
     Compute the distribution of seats won in the simulation.
     """
     
+    
     # More efficient to convert everything to numpy
     s = _stats(voteshares)
+    if s != s: return s
+    
     all_results = np.array(all_results)
 
     # Pull random sets of districts and record voteshare and seats for each
@@ -83,41 +81,44 @@ def get_bootstrap(voteshares, all_results,
     match_seats = sim_seats[np.abs(sim_voteshare - np.mean(s['voteshares'])) < epsilon]
     n_matches = len(match_seats)
 
-    # Seat stats
-    mean_seats = np.mean(match_seats)
-    std_seats = np.std(match_seats)
+    if n_matches == 0:
+        return np.nan
+    else:
+        # Seat stats
+        mean_seats = np.mean(match_seats)
+        std_seats = np.std(match_seats)
 
-    # Percent of simulations with results as extreme or worse
-    N_d_wins = len(s['d_voteshares'])
+        # Percent of simulations with results as extreme or worse
+        N_d_wins = len(s['d_voteshares'])
 
-    p = min(np.sum(match_seats >= N_d_wins),
-            np.sum(match_seats <= N_d_wins)) / n_matches
+        p = min(np.sum(match_seats >= N_d_wins),
+                np.sum(match_seats <= N_d_wins)) / n_matches
 
-    # Count of each outcome
-    seat_hist = {i: int(sum(match_seats == i)) for i in range(s['N']+1)}
+        # Count of each outcome
+        seat_hist = {i: int(sum(match_seats == i)) for i in range(s['N']+1)}
 
-    result = {
-        "mean_seats"    : mean_seats,
-        "std_seats"     : std_seats,
-        "n_matches"     : n_matches,
-        "seat_hist"     : seat_hist,
-        "p"             : _clean_nan(p),
-        "favor"         : np.sign(sum(voteshares > 0.5) - mean_seats) if p < 0.05 else 0
-    }
+        result = {
+            "mean_seats"    : mean_seats,
+            "std_seats"     : std_seats,
+            "n_matches"     : n_matches,
+            "seat_hist"     : seat_hist,
+            "p"             : _clean_nan(p),
+            "favor"         : np.sign(sum(s['voteshares'] > 0.5) - mean_seats) if p < 0.05 else 0
+        }
 
-    return result
+        return result
 
-
-def get_t_test(voteshares, onetailed=False):
+def get_t_test(voteshares, onetailed=True):
     """ Evaluate an election by comparing average party voteshare.
 
     Perform a two-sample t-test on the individual district results, comparing
     the means between democrat- and repubican-won districts.
     """
-    s = _stats(voteshares)
+    s = _stats(voteshares, min_per_party_n_wins=2)
+    if s != s: return s
 
     # Separate results by winning party, keep winning party vote share
-    party_with_more_seats = np.sign(len(dem_wins) - len(rep_wins)) # 1 for D, -1 for R, 0 otherwise
+    party_with_more_seats = np.sign(len(s['d_voteshares']) - len(s['r_voteshares'])) # 1 for D, -1 for R, 0 otherwise
 
     # Run two-tailed t-test
     t, p = stats.ttest_ind(s['d_voteshares'], 1-s['r_voteshares'], equal_var=True)
@@ -136,14 +137,24 @@ def get_t_test(voteshares, onetailed=False):
         "p"     : _clean_nan(p),
         "dmean" : dmean,
         "rmean" : rmean,
+        "diff"  : dmean - rmean,
         "favor" : party_with_lower_margin if p < 0.05 else 0 # 1 for D, -1 for R, 0 otherwise
     }
 
     return result
+        
+def get_t_test_p(voteshares, onetailed=True):
+    result = get_t_test(voteshares, onetailed=onetailed)
+    return result['p'] if result==result else result
+
+def get_t_test_diff(voteshares, onetailed=True):
+    result = get_t_test(voteshares, onetailed=onetailed)
+    return result['diff'] if result==result else result
+
     
-@catchNoElections
 def get_mean_median(voteshares):
     s = _stats(voteshares)
+    if s != s: return s
     return np.mean(s['voteshares'])-np.median(s['voteshares'])    
 
 def get_mean_median_test(voteshares):
@@ -154,12 +165,16 @@ def get_mean_median_test(voteshares):
     a difference.
     """
     s = _stats(voteshares)
+    if s != s: return s
     
     diff = get_mean_median(s['voteshares'])
 
     # According to Sam:
     # "The 0.5708 comes from p. 352 of Cabilio and Masaro 1996"
-    z = (diff / np.std(s['voteshares'])) * np.sqrt(s['N'] / 0.5708);
+    if diff == 0:
+        z = 0 # avoid possibility of dividing by zero
+    else:
+        z = (diff / np.std(s['voteshares'])) * np.sqrt(s['N'] / 0.5708);
 
     p = min(stats.norm.cdf(z), 1-stats.norm.cdf(z))
 
@@ -174,12 +189,12 @@ def get_mean_median_test(voteshares):
 
     return result
 
-@catchNoElections
 def get_equal_vote_weight(voteshares):
     """ Compute the Best et al. equal vote weight statistic
     essentially mean-median but only if majority rule is violated
     """
     s = _stats(voteshares)
+    if s != s: return s
     demvotes = np.mean(s['voteshares'])
     demseats = len(s['d_voteshares']) / s['N']
     
@@ -195,7 +210,6 @@ def get_equal_vote_weight(voteshares):
 # voteshares = np.array([0.58506428, 0.46357147, 0.45602251, 0.13485671, 0.44873664, 0.72320415, 0.53984839, 0.68092984, 0.39527916, 0.33053076])
 # tau=0
 # get_tau_gap(voteshares, tau=0)
-@catchNoElections
 def get_tau_gap(voteshares,tau):
     """ compute tau-gap. 
 
@@ -203,6 +217,7 @@ def get_tau_gap(voteshares,tau):
     TODO: Review code for when tau < 0.
     """  
     s = _stats(voteshares)
+    if s != s: return s
         
     tau_sgn = np.sign(tau)
     if tau_sgn==0: tau_sgn = 1 # (?)
@@ -227,11 +242,11 @@ def get_EG(voteshares):
     return get_tau_gap(voteshares, 0)/2
 
 
-@catchNoElections
 def _EG_lam(voteshares, lam=1, surplus_only=False, vote_centric=False):
     """ weight excess votes by lambda - lambda=1 is usual EG
     """
     s = _stats(voteshares)
+    if s != s: return s
         
     dem_loss = np.sum(s['r_voteshares'])
     rep_loss = np.sum(1-s['d_voteshares'])
@@ -299,16 +314,13 @@ def get_EG_vote_centric_two(voteshares):
 # declination and variants
 #################################################################
 
-@catchNoElections
 def get_declination(voteshares, bdec=False):
     """ Get declination.
 
     Expressed as a fraction of 90 degrees
     """
-    
-    s = _stats(voteshares)
-    
-    if len(s['d_voteshares']) == 0 or len(s['r_voteshares']) == 0: return np.nan
+    s = _stats(voteshares, min_per_party_n_wins=1)
+    if s != s: return s
     
     if bdec:
         # This is obviously somewhat arbitrary for large elections
@@ -327,6 +339,9 @@ def get_declination(voteshares, bdec=False):
     gamma = np.arctan((2*np.mean(s['d_voteshares'])-1)*(s['N']+2*xtra_num) / N_d_wins)
 
     return 2*(gamma-theta) / np.pi
+    
+def get_bdec(voteshares):
+    return get_declination(voteshares, bdec=True)
 
 def get_declin_tilde(voteshares, bdec=False):
     """ compatibility routine for getting declination; for pandas
@@ -344,11 +359,11 @@ def _uniform_swing(voteshares, target_mean=.5):
     mean_shifted = voteshares + target_mean - np.mean(voteshares)
     return np.clip(mean_shifted, 0, 1)
 
-@catchNoElections
 def get_bias(voteshares):
     """ Compute partisan bias. 02.15.18
     """
     s = _stats(voteshares)
+    if s != s: return s
     
     swung = _uniform_swing(voteshares, target_mean=.5)
     
