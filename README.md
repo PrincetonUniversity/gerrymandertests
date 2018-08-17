@@ -2,7 +2,7 @@
 
 This repository contains:
 
-1. [Python code](metrics.py) for implementing a number of metrics for quantifying gerrymandering, including:
+1. [Python code](metrics.py) for implementing a number of metrics for quantifying gerrymandering<sup>9</sup>:
     - Mean-median difference and variant:
        - Mean-median difference<sup>1,2</sup>
        - Equal vote weight<sup>2</sup>
@@ -37,3 +37,4 @@ This repository contains:
 7. John F. Nagle. (2017). [How Competitive Should a Fair Single Member Districting Plan Be?](https://www.liebertpub.com/doi/full/10.1089/elj.2016.0386). _Election Law Journal_.
 8. Wendy K. Tam Cho. (2018). [Measuring Partisan Fairness: How Well Does the Efficiency Gap Guard Against Sophisticated as well as Simple-Minded Modes of Partisan Discrimination?](https://scholarship.law.upenn.edu/penn_law_review_online/vol166/iss1/2/) _University of Pennsylvania Law
 Review_.
+9. Gregory S. Warrington. (2018). [A Comparison of Gerrymandering Metrics.](https://arxiv.org/abs/1805.12572) _arXiv_.
