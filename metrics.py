@@ -399,7 +399,7 @@ def bdec(voteshares):
 # Partisan bias                                                ##
 #################################################################
 
-def _uniform_additive_swing(voteshares, tarmean=.5):
+def _uniform_additive_swing(voteshares, target_mean=.5):
     '''
     Swing all districts by a uniform additive amount, such that the mean is equal to the target mean, clipping values at 0 and 1 if necessary.
     
@@ -408,10 +408,10 @@ def _uniform_additive_swing(voteshares, tarmean=.5):
     This is the most common type of swing used in this sort of analysis.
     '''
     
-    mean_shifted = voteshares + tarmean - np.mean(voteshares)
+    mean_shifted = voteshares + target_mean - np.mean(voteshares)
     return np.clip(mean_shifted, 0, 1)
 
-def _uniform_additive_iterative_swing(voteshares, tarmean=.5):
+def _uniform_additive_iterative_swing(voteshares, target_mean=.5):
     '''
     After clipping, keep shifting the voteshares iteratively to achieve the desired mean shift.
     There must be a way to achieve this without a loop.
@@ -419,18 +419,18 @@ def _uniform_additive_iterative_swing(voteshares, tarmean=.5):
     Experimental alternative to _uniform_additive_swing.
     '''
     
-    if np.mean(voteshares) < tarmean:
+    if np.mean(voteshares) < target_mean:
         flip = False
-    if np.mean(voteshares) > tarmean:
+    if np.mean(voteshares) > target_mean:
         flip = True
         voteshares = 1 - voteshares
 
-    tarmean = .5
+    target_mean = .5
 
     # need to distribute a total shift over districts
     shift = (t - np.mean(voteshares))*len(voteshares)
 
-    while tarmean - np.mean(voteshares) > 1e-8:
+    while target_mean - np.mean(voteshares) > 1e-8:
         # distribute shift over districts not equal to 1
         notmaxed = voteshares != 1
         voteshares[notmaxed] = voteshares[notmaxed] + shift / sum(notmaxed)
@@ -473,7 +473,7 @@ def partisan_bias(voteshares, swing=_uniform_additive_swing):
     if s != s:
         return s
 
-    swung = swing(s['voteshares'], tarmean=.5)
+    swung = swing(s['voteshares'], target_mean=.5)
 
     # find fraction of seats won by democrats in this tied election
     prop_dem_win = np.sum(swung > .5) / s['N']
