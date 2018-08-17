@@ -2,7 +2,7 @@
 
 This repository contains:
 
-1. [Python code](gerrytests.py) for implementing a number of metrics for quantifying gerrymandering, including:
+1. [Python code](metrics.py) for implementing a number of metrics for quantifying gerrymandering, including:
     - Mean-median difference and variant:
        - Mean-median difference<sup>1,2</sup>
        - Equal vote weight<sup>2</sup>
@@ -25,7 +25,7 @@ This repository contains:
 2. Historical election results:
     - Congressional elections, 1948–2016 ([CSV](election_data/congressional_election_results_post1948.csv))
     - State legislative elections (lower house), 1971–2017 ([CSV](election_data/state_legislative/state_legislative_election_results_post1971.csv), [full repository](https://github.com/PrincetonUniversity/historic_state_legislative_election_results))
-3. [Jupyter notebook](Run gerrymandering metrics.ipynb) demonstrating how to run the tests on all elections, as well as reporting the percentile ranking for all tests of any particular election.
+3. [Jupyter notebook](run_gerrymandering_metrics.ipynb) demonstrating how to run the tests on all elections, as well as reporting the percentile ranking for all tests of any particular election.
 
 ## References
 1. Samuel S.-H. Wang. (2016). [Three Tests for Practical Evaluation of Partisan Gerrymandering.](https://www.stanfordlawreview.org/print/article/three-tests-for-practical-evaluation-of-partisan-gerrymandering/) _Stanford Law Review_.

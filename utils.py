@@ -1,10 +1,9 @@
-import gerrytests as gt
+import metrics as m
 import json
 import pandas as pd
 from collections import defaultdict
 from tqdm import tqdm
 import numpy as np
-import scipy.special as spspecial
 import scipy.stats as spstats
 
 
@@ -39,10 +38,10 @@ def run_all_tests(all_results,
                   impute_val=1,
                   clip_impute=False,
                   save_unimputed=False,
-                  metrics={'t_test_diff': gt.t_test_diff,
-                           'mean_median': gt.mean_median,
-                           'partisan_bias': gt.partisan_bias,
-                           'efficiency_gap': gt.EG}):
+                  metrics={'t_test_diff': m.t_test_diff,
+                           'mean_median': m.mean_median,
+                           'partisan_bias': m.partisan_bias,
+                           'efficiency_gap': m.EG}):
     '''
     Run a number of tests with parameters about how to deal with uncontested elections, return a nested dict of the results.
     '''
@@ -163,14 +162,14 @@ def generate_website_jsons():
     
     chambers = {'state_legislative':
                 {'filepath': 'election_data/state_legislative/state_legislative_election_results_post1971.csv',
-                 'metrics': {'test1': lambda x: gt.t_test(x, onetailed=False),
-                             'test2': gt.mean_median_test}
+                 'metrics': {'test1': lambda x: m.t_test(x, onetailed=False),
+                             'test2': m.mean_median_test}
                  },
                 'congressional':
                  {'filepath': 'election_data/congressional_election_results_post1948.csv',
-                  'metrics': {'test1': lambda x: gt.t_test(x, onetailed=False),
-                              'test2': gt.mean_median_test,
-                              'test3': gt.bootstrap}
+                  'metrics': {'test1': lambda x: m.t_test(x, onetailed=False),
+                              'test2': m.mean_median_test,
+                              'test3': m.bootstrap}
                   }
                  }
     
