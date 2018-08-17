@@ -9,6 +9,12 @@ import scipy.stats as spstats
 
 
 def parse_results(input_filepath):
+    '''
+    Read CSV of election results, return a Pandas DataFrame.
+    
+    TODO: Deal with nan values for elections with no D or R votes.
+    '''
+    
     df = pd.read_csv(input_filepath)
 
     if not df.columns.contains('D Voteshare'):
@@ -28,13 +34,20 @@ def parse_results(input_filepath):
 
     return new
 
+
 def run_all_tests(all_results,
-                  impute_val=.75,
+                  impute_val=1,
                   clip_impute=False,
-                  save_unimputed=True,
-                  metrics={'test1': lambda x: gt.get_t_test(x, onetailed=False),
-                           'test2': gt.get_mean_median_test,
-                           'test3': gt.get_bootstrap}):
+                  save_unimputed=False,
+                  metrics={'t_test_diff': gt.t_test_diff,
+                           'mean_median': gt.mean_median,
+                           'partisan_bias': gt.partisan_bias,
+                           'efficiency_gap': gt.EG}):
+    '''
+    Run a number of tests with parameters about how to deal with uncontested elections, return a nested dict of the results.
+    '''
+    
+    np.seterr(all='ignore') # ignore warnings that come up from computing with nans.
 
     assert impute_val > .5 and impute_val <= 1.0, "Imputed voteshare in uncontested races must be between .5 and 1"
     
@@ -75,7 +88,7 @@ def run_all_tests(all_results,
             }
 
             for metric, f in metrics.items():
-                if f.__name__ == 'get_bootstrap':# TODO: figure out a way to do this with decorators?
+                if f.__name__ == 'bootstrap':# TODO: figure out a way to do this with decorators?
                     score = f(imputed, national_results)
                 else:
                     score = f(imputed)
@@ -86,6 +99,10 @@ def run_all_tests(all_results,
 
 
 def yearstatedf():
+    '''
+    Create a Pandas MultiIndex DataFrame, indexed by year and state.
+    '''
+    
     index = pd.MultiIndex(levels=[[], []],
                           labels=[[], []],
                           names=['Year', 'State'])
@@ -95,12 +112,13 @@ def yearstatedf():
     
 
 def tests_df(tests_dict):
-    '''return tests dict as multiindex df
+    '''
+    Return tests dict as MultiIndex DataFrame.
     '''
 
     df = yearstatedf()
 
-    for year in tqdm(tests_dict):
+    for year in tests_dict:
         for state in tests_dict[year]:
             for col, val in tests_dict[year][state].items():
                 if not isinstance(val, list):
@@ -108,11 +126,56 @@ def tests_df(tests_dict):
 
     return df
 
-if __name__ == '__main__':
-    filepaths = {'state_legislative': 'election_data/state_legislative/state_legislative_election_results_post1971.csv',
-                 'congressional': 'election_data/congressional_election_results_post1948.csv'}
+
+def generate_percentiles(tests_df, metric_cols, competitiveness_threshold=.55, min_districts=7, min_year=1972):
+    '''
+    Filter results according to statewide competitiveness, min_districts, min_year, and
+    find percentile ranking for each test and each election.
+    '''
     
-    for name, file in filepaths.items():
-        results = parse_results(file)
-        tests = run_all_tests(results)
-        json.dump(tests, open('precomputed_tests/{}.json'.format(name), 'w')) # TODO: fix this
+    comp = tests_df[(tests_df['weighted_voteshare'] < competitiveness_threshold) &
+              (tests_df['weighted_voteshare'] > 1 - competitiveness_threshold)]
+    comp = comp[comp['year'] >= min_year]
+    comp = comp[comp['ndists'] >= min_districts]
+
+    pctile = comp.copy()
+    
+    for i in comp.index:
+        for c in metric_cols:
+            pctile.loc[i, c] = spstats.percentileofscore(
+                np.abs(comp.loc[:, c]), np.abs(comp.loc[i, c]))
+    
+    return pctile
+
+
+
+
+def generate_website_jsons():
+    '''
+    Generate precomputed tests for gerrymander.princeton.edu backend.
+    '''
+    
+    def default(o):
+        # solve error with json.dump not being able to serialize NumPy integers. Convert to regular ints first.
+        # https://stackoverflow.com/questions/11942364/typeerror-integer-is-not-json-serializable-when-serializing-json-in-python
+        if isinstance(o, np.int64): return int(o)  
+        raise TypeError
+    
+    chambers = {'state_legislative':
+                {'filepath': 'election_data/state_legislative/state_legislative_election_results_post1971.csv',
+                 'metrics': {'test1': lambda x: gt.t_test(x, onetailed=False),
+                             'test2': gt.mean_median_test}
+                 },
+                'congressional':
+                 {'filepath': 'election_data/congressional_election_results_post1948.csv',
+                  'metrics': {'test1': lambda x: gt.t_test(x, onetailed=False),
+                              'test2': gt.mean_median_test,
+                              'test3': gt.bootstrap}
+                  }
+                 }
+    
+    for chamber in chambers:
+        results = parse_results(chambers[chamber]['filepath'])
+        tests = run_all_tests(results, metrics=chambers[chamber]['metrics'], impute_val=.75, save_unimputed=True)
+        json.dump(tests, open('precomputed_tests/{}.json'.format(chamber), 'w'), default=default)
+
