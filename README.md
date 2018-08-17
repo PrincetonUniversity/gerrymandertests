@@ -9,10 +9,10 @@ This repository contains:
     - Lopsided margins (two-sample _t_-test on win margins)<sup>1</sup>
     - Bootstrap (Monte Carlo) simulation<sup>1</sup>
     - Declination variants<sup>3</sup>
-       - Declination $\delta$
-       - Declination $\delta$ (buffered)
-       - Declination variant $\tilde{\delta}$
-       - Declination variant $\tilde{\delta}$ (buffered)
+       - Declination
+       - Declination (buffered)
+       - Declination variant
+       - Declination variant (buffered)
     - Efficiency gap variants
        - Efficiency gap<sup>4</sup>
        - Difference gap<sup>5,6,7</sup>
@@ -20,7 +20,7 @@ This repository contains:
        - Surplus gap<sup>8</sup>
        - Vote-centric gap<sup>6,7</sup>
        - Vote-centric gap 2<sup>6,7</sup>
-       - $\tau$ gap<sup>3</sup>
+       - Tau gap<sup>3</sup>
     - Partisan bias<sup>6,7</sup>
 2. Historical election results:
     - Congressional elections, 1948–2016 ([CSV](election_data/congressional_election_results_post1948.csv))
