@@ -428,7 +428,7 @@ def _uniform_additive_iterative_swing(voteshares, target_mean=.5):
     target_mean = .5
 
     # need to distribute a total shift over districts
-    shift = (t - np.mean(voteshares))*len(voteshares)
+    shift = (target_mean - np.mean(voteshares))*len(voteshares)
 
     while target_mean - np.mean(voteshares) > 1e-8:
         # distribute shift over districts not equal to 1
