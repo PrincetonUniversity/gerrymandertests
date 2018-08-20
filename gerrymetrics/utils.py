@@ -1,4 +1,4 @@
-import metrics as m
+from . import metrics as m
 import json
 import pandas as pd
 from collections import defaultdict
