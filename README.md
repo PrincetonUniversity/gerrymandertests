@@ -1,4 +1,5 @@
 # Metrics for quantifying gerrymandering
+[![PyPI version](https://badge.fury.io/py/gerrymetrics.svg)](https://badge.fury.io/py/gerrymetrics)
 
 This repository contains:
 
