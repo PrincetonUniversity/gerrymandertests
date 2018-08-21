@@ -1,11 +1,7 @@
 """
-A bunch of gerrymandering metrics by Sam Wang, Greg Warrington, Best, others.
+A bunch of gerrymandering metrics by Sam Wang, Greg Warrington, Eric McGhee, Robin Best, others.
 
 Code by Will Adler, Rob Whitaker, and Greg Warrington.
-
-This software is distributed under the GNU Public License.
-You are free to copy, distribute, and modify this code, so long as it
-retains this header.
 
 We adopt the convention that election results are the two-party Democratic voteshare,
 the number of Democratic votes divided by the total number of votes for Democrats and Republicans.

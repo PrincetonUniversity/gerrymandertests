@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-def plot_seats_votes_curve(Dvotes, multiplier=1, ytick_spacing=2):
+def plot_seats_votes_curve(Dvotes, multiplier=1):
     '''
     Multiplier can be 1 or 100 depending on whether you prefer proportions / percentages.
     '''
@@ -34,7 +34,6 @@ def plot_seats_votes_curve(Dvotes, multiplier=1, ytick_spacing=2):
     ax.set_ylabel('# D seats')
     
     ax.step(multiplier*(swing+mean), Dseats, '-', label='seats-votes curve, using uniform mean shift', color='red', lw=1)
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(ytick_spacing))
     ax.set_xticks(np.linspace(0,multiplier,11))
 
     return fig, ax
