@@ -1,5 +1,6 @@
 .DS_Store
 precomputed_tests/
+*.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
