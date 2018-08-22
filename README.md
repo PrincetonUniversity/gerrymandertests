@@ -28,6 +28,9 @@ This repository contains:
     - State legislative elections (lower house), 1971–2017 ([CSV](election_data/state_legislative/state_legislative_election_results_post1971.csv), [full repository](https://github.com/PrincetonUniversity/historic_state_legislative_election_results))
 3. [Jupyter notebook](run_gerrymandering_metrics.ipynb) demonstrating how to run the tests on all elections, as well as reporting the percentile ranking for all tests of any particular election.
 
+## Installation
+If using pip, do `pip install gerrymetrics`
+
 ## References
 1. Samuel S.-H. Wang. (2016). [Three Tests for Practical Evaluation of Partisan Gerrymandering.](https://www.stanfordlawreview.org/print/article/three-tests-for-practical-evaluation-of-partisan-gerrymandering/) _Stanford Law Review_.
 2. Michael D. McDonald and Robin E. Best. (2015). [Unfair Partisan Gerrymanders in Politics and Law: A Diagnostic Applied to Six Cases.](https://www.liebertpub.com/doi/abs/10.1089/elj.2015.0358) _Election Law Journal_.
