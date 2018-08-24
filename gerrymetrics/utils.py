@@ -19,7 +19,16 @@ def parse_results(input_filepath):
     if not df.columns.contains('D Voteshare'):
         df['D Voteshare'] = df['Dem Votes'] / \
             (df['Dem Votes'] + df['GOP Votes'])
-
+    
+    def str_to_int(x):
+        if isinstance(x, str):
+            return int(x.replace(',', ''))
+        else:
+            return x
+            
+    for col in ['Dem Votes', 'GOP Votes']:
+        df[col] = df[col].apply(str_to_int)
+            
     grouped = df.groupby(['Year', 'State'])
     
     new = pd.DataFrame(grouped['D Voteshare'].apply(list))
@@ -28,6 +37,7 @@ def parse_results(input_filepath):
     if df.columns.contains('Dem Votes'):
         new['Weighted Voteshare'] = grouped['Dem Votes'].apply(sum) / (grouped['Dem Votes'].apply(sum) +
                                                          grouped['GOP Votes'].apply(sum))
+        
     else:
         new['Weighted Voteshare'] = grouped['D Voteshare'].apply(np.mean)
 
