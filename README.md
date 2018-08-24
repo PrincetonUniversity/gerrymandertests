@@ -9,6 +9,7 @@ This repository contains:
        - Equal vote weight<sup>2</sup>
     - Lopsided margins (two-sample _t_-test on win margins)<sup>1</sup>
     - Bootstrap (Monte Carlo) simulation<sup>1</sup>
+    - Mann-Whitney _U_ test
     - Declination variants<sup>3</sup>
        - Declination
        - Declination (buffered)
