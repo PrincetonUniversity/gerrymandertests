@@ -10,7 +10,7 @@ In other words, voteshare = N_Democratic_votes / (N_Democratic_votes + N_Republi
 
 from __future__ import division  # for python 2
 import numpy as np
-import scipy.stats as stats
+import scipy.stats as sps
 
 
 def _clean_nan(x, replace=-1):
@@ -113,6 +113,32 @@ def bootstrap(voteshares, all_results,
         return result
 
 
+def mann_whitney_u(voteshares):
+    s = _stats(voteshares, min_per_party_n_wins=2)
+    if s != s:
+        return s
+
+    # Run two-tailed t-test
+    try:
+        test_statistic, p = sps.mannwhitneyu(s['d_voteshares'], 1 -
+                                               s['r_voteshares'])
+    except ValueError:
+        p = np.nan
+        test_statistic = np.nan
+
+    result = {
+        "p": _clean_nan(p),
+        "test_statistic": test_statistic,
+    }
+
+    return result
+
+
+def mann_whitney_u_p(voteshares):
+    result = mann_whitney_u(voteshares)
+    return result['p'] if result == result else result
+
+
 def t_test(voteshares, onetailed=True):
     '''
     Evaluate an election by comparing average party voteshare.
@@ -127,7 +153,7 @@ def t_test(voteshares, onetailed=True):
         return s
 
     # Run two-tailed t-test
-    t, p = stats.ttest_ind(s['d_voteshares'], 1 -
+    t, p = sps.ttest_ind(s['d_voteshares'], 1 -
                            s['r_voteshares'], equal_var=True)
     dmean = np.mean(s['d_voteshares'])
     rmean = np.mean(1 - s['r_voteshares'])
@@ -195,7 +221,7 @@ def mean_median_test(voteshares):
     else:
         z = (diff / np.std(s['voteshares'])) * np.sqrt(s['N'] / 0.5708)
 
-    p = min(stats.norm.cdf(z), 1 - stats.norm.cdf(z))
+    p = min(sps.norm.cdf(z), 1 - sps.norm.cdf(z))
 
     result = {
         "mean": np.mean(s['voteshares']),

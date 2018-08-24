@@ -4,7 +4,7 @@ import pandas as pd
 from collections import defaultdict
 from tqdm import tqdm
 import numpy as np
-import scipy.stats as spstats
+import scipy.stats as sps
 
 
 def parse_results(input_filepath):
@@ -151,7 +151,7 @@ def generate_percentiles(tests_df, metric_cols, competitiveness_threshold=.55, m
     
     for i in comp.index:
         for c in metric_cols:
-            pctile.loc[i, c] = spstats.percentileofscore(
+            pctile.loc[i, c] = sps.percentileofscore(
                 np.abs(comp.loc[:, c]), np.abs(comp.loc[i, c]))
     
     return pctile
