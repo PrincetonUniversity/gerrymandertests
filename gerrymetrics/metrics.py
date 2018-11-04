@@ -148,9 +148,9 @@ def t_test(voteshares, onetailed=True):
     Return a dictionary including mean per-party winning voteshare, mean difference, p-value.
     '''
 
-    s = _stats(voteshares, min_per_party_n_wins=2)
-    if s != s:
-        return s
+    s = _stats(voteshares)
+    # if s != s:
+        # return s
 
     # Run two-tailed t-test
     t, p = sps.ttest_ind(s['d_voteshares'], 1 -

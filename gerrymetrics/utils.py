@@ -6,19 +6,18 @@ from tqdm import tqdm
 import numpy as np
 import scipy.stats as sps
 
-
-def parse_results(input_filepath):
+def parse_results(input_filepath, start_year=1948, coerce_odd_years=False):
     '''
     Read CSV of election results, return a Pandas DataFrame.
-    
-    TODO: Deal with nan values for elections with no D or R votes.
     '''
     
     df = pd.read_csv(input_filepath)
-
-    if not df.columns.contains('D Voteshare'):
-        df['D Voteshare'] = df['Dem Votes'] / \
-            (df['Dem Votes'] + df['GOP Votes'])
+    
+    df = df[df['Year'] >= start_year]
+    df = df[df['Party'] != 'I'] # only include D and R wins
+    
+    if coerce_odd_years:
+        df.loc[df['Year'] % 2 == 1, 'Year'] += 1
     
     def str_to_int(x):
         if isinstance(x, str):
@@ -42,69 +41,6 @@ def parse_results(input_filepath):
         new['Weighted Voteshare'] = grouped['D Voteshare'].apply(np.mean)
 
     return new
-
-
-def run_all_tests(all_results,
-                  impute_val=1,
-                  clip_impute=False,
-                  save_unimputed=False,
-                  metrics={'t_test_diff': m.t_test_diff,
-                           'mean_median': m.mean_median,
-                           'partisan_bias': m.partisan_bias,
-                           'efficiency_gap': m.EG}):
-    '''
-    Run a number of tests with parameters about how to deal with uncontested elections, return a nested dict of the results.
-    '''
-    
-    np.seterr(all='ignore') # ignore warnings that come up from computing with nans.
-
-    assert impute_val > .5 and impute_val <= 1.0, "Imputed voteshare in uncontested races must be between .5 and 1"
-    
-    
-    tests = defaultdict(lambda: defaultdict(list))
-
-    for year in tqdm(all_results.index.levels[0]):
-        list_of_lists = [i for i in all_results.loc[year, 'D Voteshare'].values]
-        national_results = sum(list_of_lists, [])
-
-        states = all_results.loc[year].index
-
-        for state in states:
-            vs = np.array(list(all_results.loc[(year, state), 'D Voteshare']))
-
-            if impute_val != 1:
-                if clip_impute:
-                    imputed = np.clip(vs, 1 - impute_val, impute_val)
-                else:
-                    imputed = vs
-                    imputed[vs == 1] = impute_val
-                    imputed[vs == 0] = 1 - impute_val
-                if save_unimputed:
-                    vs = imputed
-            else:
-                imputed = vs
-
-            tests[year][state] = {
-                "voteshare": sum(vs) / len(vs),
-                "dseats": sum(vs > 0.5),
-                "seats": sum(vs > 0.5), # redundant but maybe necessary for backword compatibility
-                "results": list(vs),
-                "ndists": len(vs),
-                "state": state,
-                "year": year,
-                "weighted_voteshare": all_results.loc[(year, state), 'Weighted Voteshare'],
-                "district_numbers": all_results.loc[(year, state), 'District Numbers']
-            }
-
-            for metric, f in metrics.items():
-                if f.__name__ == 'bootstrap':# TODO: figure out a way to do this with decorators?
-                    score = f(imputed, national_results)
-                else:
-                    score = f(imputed)
-                    
-                tests[year][state][metric] = score
-
-    return tests
 
 
 def yearstatedf():
@@ -159,32 +95,124 @@ def generate_percentiles(tests_df, metric_cols, competitiveness_threshold=.55, m
 
 
 
+#%%
+def run_all_tests(all_results,
+                  impute_val=1,
+                  clip_impute=False,
+                  save_unimputed=False,
+                  metrics={'t_test_diff': m.t_test_diff,
+                           'mean_median': m.mean_median,
+                           'partisan_bias': m.partisan_bias,
+                           'efficiency_gap': m.EG},
+                  multimembers=None):
+    '''
+    Run a number of tests with parameters about how to deal with uncontested elections, return a nested dict of the results.
+    
+    Choices made here are for the website, gerrymander.princeton.edu, but might not be preferable in all cases.
+    '''
+    
+    np.seterr(all='ignore') # ignore warnings that come up from computing with nans.
+
+    assert impute_val > .5 and impute_val <= 1.0, "Imputed voteshare in uncontested races must be between .5 and 1"
+    
+    
+    tests = defaultdict(lambda: defaultdict(list))
+
+    for year in tqdm(all_results.index.levels[0]):
+        list_of_lists = [i for i in all_results.loc[year, 'D Voteshare'].values]
+        national_results = np.array(sum(list_of_lists, []))
+        national_results[national_results == 1] = impute_val
+        national_results[national_results == 0] = 1 - impute_val
+
+        states = all_results.loc[year].index
+
+        for state in states:
+            vs = np.array(list(all_results.loc[(year, state), 'D Voteshare']))
+
+            if impute_val != 1:
+                if clip_impute:
+                    imputed = np.clip(vs, 1 - impute_val, impute_val)
+                else:
+                    imputed = vs.copy()
+                    imputed[vs == 1] = impute_val
+                    imputed[vs == 0] = 1 - impute_val
+                
+                if not save_unimputed:
+                    vs = imputed
+            else:
+                imputed = vs.copy()
+            
+            tests[year][state] = {
+                "voteshare": sum(vs) / len(vs),
+                "dseats": sum(vs > 0.5),
+                "seats": sum(vs > 0.5), # redundant but maybe necessary for backword compatibility
+                "results": list(vs),
+                "ndists": len(vs),
+                "state": state,
+                "year": year,
+                "weighted_voteshare": all_results.loc[(year, state), 'Weighted Voteshare'],
+                "district_numbers": all_results.loc[(year, state), 'District Numbers']
+            }
+            if multimembers is not None:
+                tests[year][state]['multimember'] = state in multimembers
+
+            for metric, f in metrics.items():
+                if f.__name__ == 'bootstrap':# TODO: figure out a way to do this with decorators?
+                    score = f(vs, national_results)
+                    if isinstance(score, dict) and 'seat_hist' in score:
+                        score['sim_seats'] = list(score['seat_hist'].values())[:-1] # figure out a way to not do this, on the website end
+                else:
+                    score = f(imputed)
+
+                tests[year][state][metric] = score
+                
+
+    return tests
+
 def generate_website_jsons():
     '''
     Generate precomputed tests for gerrymander.princeton.edu backend.
     '''
-    
+
     def default(o):
         # solve error with json.dump not being able to serialize NumPy integers. Convert to regular ints first.
         # https://stackoverflow.com/questions/11942364/typeerror-integer-is-not-json-serializable-when-serializing-json-in-python
         if isinstance(o, np.int64): return int(o)  
         raise TypeError
     
-    chambers = {'state_legislative':
-                {'filepath': 'election_data/state_legislative/state_legislative_election_results_post1971.csv',
-                 'metrics': {'test1': lambda x: m.t_test(x, onetailed=False),
-                             'test2': m.mean_median_test}
-                 },
-                'congressional':
+    chambers = {'congressional':
                  {'filepath': 'election_data/congressional_election_results_post1948.csv',
                   'metrics': {'test1': lambda x: m.t_test(x, onetailed=False),
                               'test2': m.mean_median_test,
-                              'test3': m.bootstrap}
-                  }
+                              'test3': m.bootstrap},
+                  'start_year': 1948,
+                  'multimembers': None
+                  },
+                 'state_legislative':
+                     {'filepath': 'election_data/state_legislative/state_legislative_election_results_post1971.csv',
+                      'metrics': {'test1': lambda x: m.t_test(x, onetailed=False),
+                                  'test2': m.mean_median_test},
+                      'start_year': 2011,
+                      'multimembers': ['AZ', 'ID', 'MD', 'NH', 'NJ', 'ND', 'SD', 'VT', 'WA', 'WV']
+                      }
                  }
     
     for chamber in chambers:
-        results = parse_results(chambers[chamber]['filepath'])
-        tests = run_all_tests(results, metrics=chambers[chamber]['metrics'], impute_val=.75, save_unimputed=True)
-        json.dump(tests, open('precomputed_tests/{}.json'.format(chamber), 'w'), default=default)
-
+        results = parse_results(chambers[chamber]['filepath'],
+                                start_year=chambers[chamber]['start_year'],
+                                coerce_odd_years=True)
+        tests = run_all_tests(results,
+                              metrics=chambers[chamber]['metrics'],
+                              impute_val=.75,
+                              save_unimputed=True,
+                              multimembers=chambers[chamber]['multimembers'])
+        with open('precomputed_tests/{}.json'.format(chamber), 'w') as file:
+            # json.dump(tests, file, default=default)
+            
+            # JSON doesn't like NaNs
+            null = -1 # or 'null'?
+            out = json.dumps(tests, default=default).replace('NaN', '-1')
+            file.write(out)
+            
+        
+generate_website_jsons()
