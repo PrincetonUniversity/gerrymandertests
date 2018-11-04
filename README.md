@@ -9,6 +9,7 @@ This repository contains:
        - Equal vote weight<sup>2</sup>
     - Lopsided margins (two-sample _t_-test on win margins)<sup>1</sup>
     - Bootstrap (Monte Carlo) simulation<sup>1</sup>
+    - Mann-Whitney _U_ test
     - Declination variants<sup>3</sup>
        - Declination
        - Declination (buffered)
@@ -38,7 +39,7 @@ If using pip, do `pip install gerrymetrics`
 4. Eric McGhee. (2014). [Measuring Partisan Bias in Single‐Member District Electoral Systems.](https://onlinelibrary.wiley.com/doi/abs/10.1111/lsq.12033) _Legislative Studies Quarterly_.
 5. _Whitford v. Gill_, No. 15-cv-421, F. Supp. 3d. (2016). [Griesbach, dissenting, 128.](https://www.leagle.com/decision/infdco20161122f51)
 6. Benjamin P. Cover. (2018). [Quantifying Partisan Gerrymandering: An Evaluation of the Efficiency Gap Proposal](https://www.stanfordlawreview.org/print/article/quantifying-partisan-gerrymandering/). _Stanford Law Review_.
-7. John F. Nagle. (2017). [How Competitive Should a Fair Single Member Districting Plan Be?](https://www.liebertpub.com/doi/full/10.1089/elj.2016.0386). _Election Law Journal_.
+7. John F. Nagle. (2017). [How Competitive Should a Fair Single Member Districting Plan Be?](https://www.liebertpub.com/doi/full/10.1089/elj.2016.0386) _Election Law Journal_.
 8. Wendy K. Tam Cho. (2018). [Measuring Partisan Fairness: How Well Does the Efficiency Gap Guard Against Sophisticated as well as Simple-Minded Modes of Partisan Discrimination?](https://scholarship.law.upenn.edu/penn_law_review_online/vol166/iss1/2/) _University of Pennsylvania Law
 Review_.
 9. Gregory S. Warrington. (2018). [A Comparison of Gerrymandering Metrics.](https://arxiv.org/abs/1805.12572) _arXiv_.
