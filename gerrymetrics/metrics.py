@@ -483,23 +483,16 @@ def _uniform_proportional_swing(voteshares, target_mean=.5):
         return 1 - (1 - voteshares) * target_mean / (1 - mean)
 
 
-def partisan_bias(voteshares, swing=_uniform_additive_swing):
+def partisan_bias(voteshares):
     '''
-    Compute partisan bias.
-    
-    Uniformly swing vote such that the statewide result is a tie,
-    determine fractional seat share advantage to one party.
+    Compute partisan bias, defined as the difference between the Dem seat share and the Dem seat share under a uniform swing to a 50–50 vote split.
+    Equal to one-half minus the proportion of districts more D than the mean.
+    (See Warrington, 2018; others)
     '''
     
     s = _stats(voteshares)
     if s != s:
         return s
-
-    swung = swing(s['voteshares'], target_mean=.5)
-
-    # find fraction of seats won by democrats in this tied election
-    prop_dem_win = np.sum(swung > .5) / s['N']
-
-    return 0.5 - prop_dem_win  # negated so positive for republicans for consistency
-
-
+    
+    mean = np.mean(s['voteshares'])
+    return 0.5 - sum(s['voteshares']>mean) / s['N']
