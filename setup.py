@@ -12,6 +12,7 @@ setuptools.setup(
     author_email='wtadler@princeton.edu',
     license='GNU General Public License v3.0',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     install_requires=['pandas', 'numpy', 'scipy', 'matplotlib', 'tqdm'],
     url='https://github.com/PrincetonUniversity/gerrymandertests'
 )
