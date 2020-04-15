@@ -1,30 +1,7 @@
-long_description = """\
-Code for running 16 different metrics for measuring partisan gerrymandering, including:
-
-- Mean-median difference and variant:
-   - Mean-median difference
-   - Equal vote weight
-- Lopsided margins (two-sample _t_-test on win margins)
-- Bootstrap (Monte Carlo) simulation
-- Declination variants
-   - Declination
-   - Declination (buffered)
-   - Declination variant
-   - Declination variant (buffered)
-- Efficiency gap variants
-   - Efficiency gap
-   - Difference gap
-   - Loss gap
-   - Surplus gap
-   - Vote-centric gap
-   - Vote-centric gap 2
-   - Tau gap
-- Partisan bias
-"""
-
-
-
 import setuptools
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setuptools.setup(
     name='gerrymetrics',
