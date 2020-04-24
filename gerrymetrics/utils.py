@@ -33,7 +33,8 @@ def parse_results(input_filepath, start_year=1948, coerce_odd_years=False):
     new = pd.DataFrame(grouped['D Voteshare'].apply(list))
     new['District Numbers'] = grouped['District'].apply(list)
     
-    if df.columns.contains('Dem Votes'):
+#     if df.columns.contains('Dem Votes'):
+      if 'Dem Votes' in df.columns:
         new['Weighted Voteshare'] = grouped['Dem Votes'].apply(sum) / (grouped['Dem Votes'].apply(sum) +
                                                          grouped['GOP Votes'].apply(sum))
         
